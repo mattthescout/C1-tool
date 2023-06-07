@@ -1,0 +1,7 @@
+# script to run exe in gdb with sudo permission
+#
+#
+# 
+#
+
+pkexec /usr/bin/gdb "$@"
