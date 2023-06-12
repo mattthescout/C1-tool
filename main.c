@@ -39,24 +39,24 @@
 int serial_fd = -1;
 int std_output_fd = 1;
 
-int own_printf(const char *format, ...)
+int own_printf(const char* format, ...)
 {
     char buff[4096];
     int len;
 
     va_list args;
-    va_start( args, format );
-    len = vsnprintf(buff, sizeof(buff), format, args );
+    va_start(args, format);
+    len = vsnprintf(buff, sizeof(buff), format, args);
 
     if (std_output_fd == 1)
     {
         write(std_output_fd, buff, len);
     }
-    else if(send(std_output_fd, buff, len, MSG_DONTWAIT)<0)
+    else if (send(std_output_fd, buff, len, MSG_DONTWAIT) < 0)
     {
         perror("\nSending failed.Error:");
     }
-    va_end( args );
+    va_end(args);
     return len;
 }
 
@@ -68,7 +68,7 @@ int own_printf(const char *format, ...)
     @return -1 if application can't open /dev/serial0 device
     @return -2 if incompatible baud is selected
 */
-static int open_port(char *device, uint32_t baudRate)
+static int open_port(char* device, uint32_t baudRate)
 {
     int uart_fd = -1;
     struct termios options;
@@ -116,12 +116,12 @@ static int open_port(char *device, uint32_t baudRate)
     @return device descriptor
     @return -1 if application can't open TCP socket
 */
-static int open_socket(char *address)
+static int open_socket(char* address)
 {
     int sock_fd = -1, port;
-    struct hostent *he;
+    struct hostent* he;
     struct sockaddr_in their_addr; /* connector's address information */
-    char *sport;
+    char* sport;
 
     sport = strstr(address, ":");
     *sport = 0;
@@ -131,7 +131,7 @@ static int open_socket(char *address)
     own_printf("Trying to connect to host %s, port %d\n", address, port);
 
 
-    if ((he=gethostbyname(address)) == NULL) {  /* get the host info */
+    if ((he = gethostbyname(address)) == NULL) {  /* get the host info */
         herror("gethostbyname");
         exit(1);
     }
@@ -143,11 +143,11 @@ static int open_socket(char *address)
 
     their_addr.sin_family = AF_INET;      /* host byte order */
     their_addr.sin_port = htons(port);    /* short, network byte order */
-    their_addr.sin_addr = *((struct in_addr *)he->h_addr);
+    their_addr.sin_addr = *((struct in_addr*)he->h_addr);
     bzero(&(their_addr.sin_zero), 8);     /* zero the rest of the struct */
 
-    if (connect(sock_fd, (struct sockaddr *)&their_addr, \
-                                          sizeof(struct sockaddr)) == -1) {
+    if (connect(sock_fd, (struct sockaddr*)&their_addr, \
+        sizeof(struct sockaddr)) == -1) {
         perror("connect");
         return -1;
     }
@@ -162,7 +162,7 @@ static int open_socket(char *address)
     @param[in] size - data size
     @details Function is called after every UART command.
 */
-void uart_protocol_write(uint8_t *data, size_t size)
+void uart_protocol_write(uint8_t* data, size_t size)
 {
     if (0)
     {
@@ -174,11 +174,11 @@ void uart_protocol_write(uint8_t *data, size_t size)
     }
 
 
-    if (write(serial_fd, data, size) <  size)
+    if (write(serial_fd, data, size) < size)
         own_printf("uart_protocol_write error writing!\n");
 }
 
-void mifare_commands_execute(uint8_t *buff, size_t len)
+void mifare_commands_execute(uint8_t* buff, size_t len)
 {
     uint8_t cmd[4096];
     uint32_t val32;
@@ -188,48 +188,48 @@ void mifare_commands_execute(uint8_t *buff, size_t len)
 
     if (buff[0] == CMD_ERROR)
     {
-        own_printf( "Command 0x%02X failed with ERROR 0x%02X%02X!!!\n", buff[1], buff[2], buff[3]);
+        own_printf("Command 0x%02X failed with ERROR 0x%02X%02X!!!\n", buff[1], buff[2], buff[3]);
     }
     else if (buff[0] == CMD_ACK)
-    switch (buff[1])
-    {
+        switch (buff[1])
+        {
         case CMD_DUMMY_COMMAND:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_GET_TAG_COUNT;
             binary_protocol_send(cmd, 1);
-            own_printf( "==> Get tag count = ");
-        break;
+            own_printf("==> Get tag count = ");
+            break;
         case CMD_GET_TAG_COUNT:
             tag_count = buff[2];
-            own_printf( "%d\n", tag_count);
+            own_printf("%d\n", tag_count);
             if (tag_count > 0)
             {
                 cmd[0] = CMD_GET_UID;
-                cmd[1] = tag_count-1;
+                cmd[1] = tag_count - 1;
                 binary_protocol_send(cmd, 2);
-                own_printf( "==> Get UID info");
+                own_printf("==> Get UID info");
             }
             else
             {
                 cmd[0] = CMD_SET_POLLING;
                 cmd[1] = 1;
                 binary_protocol_send(cmd, 2);
-                own_printf( "==> Enable polling - ");
+                own_printf("==> Enable polling - ");
             }
-        break;
+            break;
         case CMD_GET_UID:
-            own_printf("type: 0x%02X, param: 0x%02X, UID len: 0x%02X, UID: ", buff[2], buff[3], len-4);
-            for (uint8_t k=0; k< len-4; k++)
-                own_printf( " 0x%02X", buff[k+4]);
-            own_printf( "\n");
+            own_printf("type: 0x%02X, param: 0x%02X, UID len: 0x%02X, UID: ", buff[2], buff[3], len - 4);
+            for (uint8_t k = 0; k < len - 4; k++)
+                own_printf(" 0x%02X", buff[k + 4]);
+            own_printf("\n");
 
             cmd[0] = CMD_ACTIVATE_TAG;
-            cmd[1] = tag_count-1;
+            cmd[1] = tag_count - 1;
             binary_protocol_send(cmd, 2);
-            own_printf( "==> Activate tag %d - ", tag_count-1);
-        break;
+            own_printf("==> Activate tag %d - ", tag_count - 1);
+            break;
         case CMD_ACTIVATE_TAG:
-            own_printf( "OK\n");
+            own_printf("OK\n");
 
             cmd[0] = CMD_SET_KEY;
             cmd[1] = 0;
@@ -237,10 +237,10 @@ void mifare_commands_execute(uint8_t *buff, size_t len)
             memset(&cmd[3], 0xff, 12); //keyA + keyB
 
             binary_protocol_send(cmd, 15);
-            own_printf( "==> Set key 0 to 0x%02X%02X...", cmd[3], cmd[4]);
-        break;
+            own_printf("==> Set key 0 to 0x%02X%02X...", cmd[3], cmd[4]);
+            break;
         case CMD_SET_KEY:
-            own_printf( "OK\n");
+            own_printf("OK\n");
 
             cmd[0] = CMD_MF_WRITE_BLOCK;
             cmd[1] = 1;
@@ -248,15 +248,15 @@ void mifare_commands_execute(uint8_t *buff, size_t len)
             cmd[3] = 0x0A;
             cmd[4] = 0; //keyNo = 0
 
-            cmd[5] = rand()%255;
-            for (int k=0; k< 2*16; k++)
-                cmd[6+k] = cmd[5+k]+1;
+            cmd[5] = rand() % 255;
+            for (int k = 0; k < 2 * 16; k++)
+                cmd[6 + k] = cmd[5 + k] + 1;
 
             binary_protocol_send(cmd, 37);
-            own_printf( "==> Writing data to tag 0x%02X 0x%02X 0x%02X...- ", cmd[5], cmd[6], cmd[7]);
-        break;
+            own_printf("==> Writing data to tag 0x%02X 0x%02X 0x%02X...- ", cmd[5], cmd[6], cmd[7]);
+            break;
         case CMD_MF_WRITE_BLOCK:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_MF_READ_BLOCK;
             cmd[1] = 1;
             cmd[2] = 2;
@@ -264,16 +264,16 @@ void mifare_commands_execute(uint8_t *buff, size_t len)
             cmd[4] = 0; //keyNo = 0
 
             binary_protocol_send(cmd, 5);
-            own_printf( "==> Reading data:");
-        break;
+            own_printf("==> Reading data:");
+            break;
         case CMD_MF_READ_BLOCK:
-            for (int k=0; k< len-1; k++)
+            for (int k = 0; k < len - 1; k++)
             {
-                if (k%16==0)
-                    own_printf( "\n\t\t");
-                own_printf( " 0x%02X", buff[k+2]);
+                if (k % 16 == 0)
+                    own_printf("\n\t\t");
+                own_printf(" 0x%02X", buff[k + 2]);
             }
-            own_printf( "\n");
+            own_printf("\n");
 
             val32 = 1234;
             cmd[0] = CMD_MF_WRITE_VALUE;
@@ -284,10 +284,10 @@ void mifare_commands_execute(uint8_t *buff, size_t len)
             cmd[8] = 55;
 
             binary_protocol_send(cmd, 9);
-            own_printf( "==> Writing value - %d, addess %d - ", val32, cmd[8]);
-        break;
+            own_printf("==> Writing value - %d, addess %d - ", val32, cmd[8]);
+            break;
         case CMD_MF_WRITE_VALUE:
-            own_printf( "OK\n");
+            own_printf("OK\n");
 
             val32 = 5;
             cmd[0] = CMD_MF_INCREMENT;
@@ -298,45 +298,45 @@ void mifare_commands_execute(uint8_t *buff, size_t len)
             cmd[8] = 0x01; //increment
 
             binary_protocol_send(cmd, 9);
-            own_printf( "==> Increment value by %d - ", val32);
-        break;
+            own_printf("==> Increment value by %d - ", val32);
+            break;
         case CMD_MF_INCREMENT:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_MF_TRANSFER;
             cmd[1] = 5;
             cmd[2] = 0x0A;
             cmd[3] = 0; //keyNo = 0
 
             binary_protocol_send(cmd, 4);
-            own_printf( "==> Transfer value - ");
-        break;
+            own_printf("==> Transfer value - ");
+            break;
         case CMD_MF_TRANSFER:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_MF_READ_VALUE;
             cmd[1] = 5;
             cmd[2] = 0x0A;
             cmd[3] = 0; //keyNo = 0
 
             binary_protocol_send(cmd, 4);
-            own_printf( "==> Reading value - ");
-        break;
+            own_printf("==> Reading value - ");
+            break;
         case CMD_MF_READ_VALUE:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_SET_POLLING;
             cmd[1] = 1;
             binary_protocol_send(cmd, 2);
-            own_printf( "==> Enable polling - ");
-        break;
+            own_printf("==> Enable polling - ");
+            break;
         case CMD_SET_POLLING:
-            own_printf( "OK\n");
-            own_printf( "Test finished!\n");
+            own_printf("OK\n");
+            own_printf("Test finished!\n");
             exit(0);
-        break;
-    }
+            break;
+        }
 }
 
 
-void mifare_ul_commands_execute(uint8_t *buff, size_t len)
+void mifare_ul_commands_execute(uint8_t* buff, size_t len)
 {
     uint8_t cmd[4096];
     uint32_t val32;
@@ -346,115 +346,115 @@ void mifare_ul_commands_execute(uint8_t *buff, size_t len)
 
     if (buff[0] == CMD_ERROR)
     {
-        own_printf( "Command 0x%02X failed with ERROR 0x%02X%02X!!!\n", buff[1], buff[2], buff[3]);
+        own_printf("Command 0x%02X failed with ERROR 0x%02X%02X!!!\n", buff[1], buff[2], buff[3]);
     }
     else if (buff[0] == CMD_ACK)
-    switch (buff[1])
-    {
+        switch (buff[1])
+        {
         case CMD_DUMMY_COMMAND:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_GET_TAG_COUNT;
             binary_protocol_send(cmd, 1);
-            own_printf( "==> Get tag count = ");
-        break;
+            own_printf("==> Get tag count = ");
+            break;
         case CMD_GET_TAG_COUNT:
             tag_count = buff[2];
-            own_printf( "%d\n", tag_count);
+            own_printf("%d\n", tag_count);
             if (tag_count > 0)
             {
                 cmd[0] = CMD_GET_UID;
-                cmd[1] = tag_count-1;
+                cmd[1] = tag_count - 1;
                 binary_protocol_send(cmd, 2);
-                own_printf( "==> Get UID info");
+                own_printf("==> Get UID info");
             }
             else
             {
                 cmd[0] = CMD_SET_POLLING;
                 cmd[1] = 1;
                 binary_protocol_send(cmd, 2);
-                own_printf( "==> Enable polling - ");
+                own_printf("==> Enable polling - ");
             }
-        break;
+            break;
         case CMD_GET_UID:
-            own_printf("type: 0x%02X, param: 0x%02X, UID len: 0x%02X, UID: ", buff[2], buff[3], len-4);
-            for (uint8_t k=0; k< len-4; k++)
-                own_printf( " 0x%02X", buff[k+4]);
-            own_printf( "\n");
+            own_printf("type: 0x%02X, param: 0x%02X, UID len: 0x%02X, UID: ", buff[2], buff[3], len - 4);
+            for (uint8_t k = 0; k < len - 4; k++)
+                own_printf(" 0x%02X", buff[k + 4]);
+            own_printf("\n");
 
             cmd[0] = CMD_ACTIVATE_TAG;
-            cmd[1] = tag_count-1;
+            cmd[1] = tag_count - 1;
             binary_protocol_send(cmd, 2);
-            own_printf( "==> Activate tag %d - ", tag_count-1);
-        break;
+            own_printf("==> Activate tag %d - ", tag_count - 1);
+            break;
         case CMD_ACTIVATE_TAG:
-            own_printf( "OK\n");
+            own_printf("OK\n");
 
             cmd[0] = CMD_MFU_WRITE_PAGE;
             cmd[1] = 4;
             cmd[2] = 2;
 
-            cmd[3] = rand()%255;
-            for (int k=0; k< 2*4; k++)
-                cmd[4+k] = cmd[3+k]+1;
+            cmd[3] = rand() % 255;
+            for (int k = 0; k < 2 * 4; k++)
+                cmd[4 + k] = cmd[3 + k] + 1;
 
             binary_protocol_send(cmd, 11);
-            own_printf( "==> Writing data to tag 0x%02X 0x%02X 0x%02X...- ", cmd[3], cmd[4], cmd[5]);
-        break;
+            own_printf("==> Writing data to tag 0x%02X 0x%02X 0x%02X...- ", cmd[3], cmd[4], cmd[5]);
+            break;
         case CMD_MFU_WRITE_PAGE:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_MFU_READ_PAGE;
             cmd[1] = 4;
             cmd[2] = 2;
 
             binary_protocol_send(cmd, 3);
-            own_printf( "==> Reading data:");
-        break;
+            own_printf("==> Reading data:");
+            break;
         case CMD_MFU_READ_PAGE:
-            for (int k=0; k< len-1; k++)
+            for (int k = 0; k < len - 1; k++)
             {
-                if (k%16==0)
-                    own_printf( "\n\t\t");
-                own_printf( " 0x%02X", buff[k+2]);
+                if (k % 16 == 0)
+                    own_printf("\n\t\t");
+                own_printf(" 0x%02X", buff[k + 2]);
             }
-            own_printf( "\n");
+            own_printf("\n");
 
             cmd[0] = CMD_MFU_GET_VERSION;
 
             binary_protocol_send(cmd, 1);
-            own_printf( "==> Reading version - ");
-        break;
+            own_printf("==> Reading version - ");
+            break;
         case CMD_MFU_GET_VERSION:
-            for (int k=0; k< len-1; k++)
+            for (int k = 0; k < len - 1; k++)
             {
-                own_printf( " 0x%02X", buff[k+2]);
+                own_printf(" 0x%02X", buff[k + 2]);
             }
-            own_printf( "\n");
+            own_printf("\n");
 
             cmd[0] = CMD_MFU_READ_SIG;
 
             binary_protocol_send(cmd, 1);
-            own_printf( "==> Get signature - ");
-        break;
+            own_printf("==> Get signature - ");
+            break;
         case CMD_MFU_READ_SIG:
-            for (int k=0; k< len-1; k++)
+            for (int k = 0; k < len - 1; k++)
             {
-                if (k%16==0)
-                    own_printf( "\n\t\t");
-                own_printf( " 0x%02X", buff[k+2]);
+                if (k % 16 == 0)
+                    own_printf("\n\t\t");
+                own_printf(" 0x%02X", buff[k + 2]);
             }
-            own_printf( "\n");
+            own_printf("\n");
             cmd[0] = CMD_MFU_READ_COUNTER;
             cmd[1] = 1;
 
             binary_protocol_send(cmd, 2);
-            own_printf( "==> Reading counter - ");
-        break;
+            own_printf("==> Reading counter - ");
+            break;
         case CMD_MFU_READ_COUNTER:
-            for (int k=0; k< len-2; k++)
+            for (int k = 0; k < len - 2; k++)
             {
-                own_printf( " 0x%02X", buff[k+2]);
+                own_printf(" 0x%02X", buff[k + 2]);
             }
-            own_printf( "\n");
+            own_printf("\n");
             cmd[0] = CMD_MFU_INCREMENT_COUNTER;
             cmd[1] = 1; //counter number
             cmd[2] = 1; //value
@@ -462,24 +462,24 @@ void mifare_ul_commands_execute(uint8_t *buff, size_t len)
             cmd[4] = 0;
 
             binary_protocol_send(cmd, 5);
-            own_printf( "==> Incrementing counter - ");
-        break;
+            own_printf("==> Incrementing counter - ");
+            break;
         case CMD_MFU_INCREMENT_COUNTER:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_SET_POLLING;
             cmd[1] = 1;
             binary_protocol_send(cmd, 2);
-            own_printf( "==> Enable polling - ");
-        break;
+            own_printf("==> Enable polling - ");
+            break;
         case CMD_SET_POLLING:
-            own_printf( "OK\n");
-            own_printf( "Test finished\n");
+            own_printf("OK\n");
+            own_printf("Test finished\n");
             exit(0);
-        break;
-    }
+            break;
+        }
 }
 
-void mifare_df_commands_execute(uint8_t *buff, size_t len)
+void mifare_df_commands_execute(uint8_t* buff, size_t len)
 {
     uint8_t cmd[4096];
     uint32_t val32;
@@ -490,54 +490,54 @@ void mifare_df_commands_execute(uint8_t *buff, size_t len)
     static uint8_t operation_to_commit;
 
 
-	struct {
-		uint16_t nr;
-		char text[32];
-	} test_record;
+    struct {
+        uint16_t nr;
+        char text[32];
+    } test_record;
 
     srand(time(0));
 
     if (buff[0] == CMD_ERROR)
     {
-        own_printf( "Command 0x%02X failed with ERROR 0x%02X%02X!!!\n", buff[1], buff[2], buff[3]);
+        own_printf("Command 0x%02X failed with ERROR 0x%02X%02X!!!\n", buff[1], buff[2], buff[3]);
         exit(-1);
     }
     else if (buff[0] == CMD_ACK)
-    switch (buff[1])
-    {
+        switch (buff[1])
+        {
         case CMD_DUMMY_COMMAND:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_GET_TAG_COUNT;
             binary_protocol_send(cmd, 1);
-            own_printf( "==> Get tag count = ");
-        break;
+            own_printf("==> Get tag count = ");
+            break;
         case CMD_GET_TAG_COUNT:
             tag_count = buff[2];
-            own_printf( "%d\n", tag_count);
+            own_printf("%d\n", tag_count);
             if (tag_count > 0)
             {
                 cmd[0] = CMD_GET_UID;
-                cmd[1] = tag_count-1;
+                cmd[1] = tag_count - 1;
                 binary_protocol_send(cmd, 2);
-                own_printf( "==> Get UID info");
+                own_printf("==> Get UID info");
             }
             else
             {
                 cmd[0] = CMD_SET_POLLING;
                 cmd[1] = 1;
                 binary_protocol_send(cmd, 2);
-                own_printf( "==> Enable polling - ");
+                own_printf("==> Enable polling - ");
             }
-        break;
+            break;
         case CMD_GET_UID:
-            own_printf("type: 0x%02X, param: 0x%02X, UID len: 0x%02X, UID: ", buff[2], buff[3], len-4);
-            for (uint8_t k=0; k< len-4; k++)
-                own_printf( " 0x%02X", buff[k+4]);
+            own_printf("type: 0x%02X, param: 0x%02X, UID len: 0x%02X, UID: ", buff[2], buff[3], len - 4);
+            for (uint8_t k = 0; k < len - 4; k++)
+                own_printf(" 0x%02X", buff[k + 4]);
             own_printf("\n");
 
             if (buff[3] == 0x20)
             {
-                own_printf( "Desfire tag detected, performing test...\n");
+                own_printf("Desfire tag detected, performing test...\n");
                 idle_count = 0;
 
                 cmd[0] = CMD_SET_KEY;
@@ -546,25 +546,25 @@ void mifare_df_commands_execute(uint8_t *buff, size_t len)
 
                 memset(&cmd[3], 0x00, 16);
                 binary_protocol_send(cmd, 19);
-                own_printf( "==> Set key in storage no %d\n", idle_count);
+                own_printf("==> Set key in storage no %d\n", idle_count);
             }
             else
             {
                 own_printf("\nIt is not Desfire tag, exiting...\n");
                 exit(-1);
             }
-        break;
+            break;
         case CMD_SET_KEY:
             if (idle_count < 2)
             {
                 cmd[0] = CMD_SET_KEY;
-                cmd[1] = idle_count+1; //key no
+                cmd[1] = idle_count + 1; //key no
                 cmd[2] = KEY_TYPE_AES128; //key type
 
                 memset(&cmd[3], idle_count, 16);
                 idle_count++;
                 binary_protocol_send(cmd, 19);
-                own_printf( "==> Set key in storage no %d\n", idle_count);
+                own_printf("==> Set key in storage no %d\n", idle_count);
             }
             else
             {
@@ -574,11 +574,11 @@ void mifare_df_commands_execute(uint8_t *buff, size_t len)
                 cmd[3] = 0;
                 idle_count = 0;
                 binary_protocol_send(cmd, 4);
-                own_printf( "==> Selecting masster app - ");
+                own_printf("==> Selecting masster app - ");
             }
-        break;
+            break;
         case CMD_MFDF_SELECT_APP:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             if (idle_count == 0) //master app selected
             {
                 cmd[0] = CMD_MFDF_AUTH;
@@ -587,7 +587,7 @@ void mifare_df_commands_execute(uint8_t *buff, size_t len)
                 cmd[3] = 0;
                 idle_count = 0;
                 binary_protocol_send(cmd, 4);
-                own_printf( "==> Authorizing master app - ");
+                own_printf("==> Authorizing master app - ");
             }
             else
             {
@@ -597,20 +597,20 @@ void mifare_df_commands_execute(uint8_t *buff, size_t len)
                 cmd[3] = 0;
                 idle_count = 1;
                 binary_protocol_send(cmd, 4);
-                own_printf( "==> Authorizing test app - ");
+                own_printf("==> Authorizing test app - ");
             }
-        break;
+            break;
         case CMD_MFDF_AUTH:
-            own_printf( "OK\n");
-            if (idle_count==0)
+            own_printf("OK\n");
+            if (idle_count == 0)
             {
                 cmd[0] = CMD_MFDF_FORMAT;
                 binary_protocol_send(cmd, 1);
-                own_printf( "==> Formating tag - ");
+                own_printf("==> Formating tag - ");
             }
-        break;
+            break;
         case CMD_MFDF_AUTH_AES:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_MFDF_CREATE_DATA_FILE;
             cmd[1] = 0x01;
             cmd[2] = 0xEE;
@@ -620,24 +620,24 @@ void mifare_df_commands_execute(uint8_t *buff, size_t len)
             cmd[6] = 0;
             cmd[7] = 1;
             binary_protocol_send(cmd, 8);
-            own_printf( "==> Creating data file - ");
-        break;
+            own_printf("==> Creating data file - ");
+            break;
         case CMD_MFDF_FORMAT:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_MFDF_GET_FREEMEM;
             binary_protocol_send(cmd, 1);
-            own_printf( "==> Get free memory - ");
-        break;
+            own_printf("==> Get free memory - ");
+            break;
         case CMD_MFDF_GET_FREEMEM:
-            own_printf( "%d bytes\n", *((uint32_t *)&buff[2]));
+            own_printf("%d bytes\n", *((uint32_t*)&buff[2]));
             cmd[0] = CMD_MFDF_GET_VERSION;
             binary_protocol_send(cmd, 1);
-            own_printf( "==> Get version - ");
-        break;
+            own_printf("==> Get version - ");
+            break;
         case CMD_MFDF_GET_VERSION:
             for (int k = 0; k < 28; k++)
-                own_printf( "%02X ", buff[2+k]);
-            own_printf( "\n");
+                own_printf("%02X ", buff[2 + k]);
+            own_printf("\n");
 
             cmd[0] = CMD_MFDF_CREATE_APP;
             cmd[1] = 0xAA;
@@ -647,20 +647,20 @@ void mifare_df_commands_execute(uint8_t *buff, size_t len)
             cmd[5] = 0x84;
 
             binary_protocol_send(cmd, 6);
-            own_printf( "==> Creating new app  - ");
-        break;
+            own_printf("==> Creating new app  - ");
+            break;
         case CMD_MFDF_CREATE_APP:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_MFDF_SELECT_APP;
             cmd[1] = 0xAA;
             cmd[2] = 0x55;
             cmd[3] = 0xAA;
             idle_count = 1;
             binary_protocol_send(cmd, 4);
-            own_printf( "==> Selecting test app - ");
-        break;
+            own_printf("==> Selecting test app - ");
+            break;
         case CMD_MFDF_CREATE_DATA_FILE:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             //write to file
             cmd[0] = CMD_MFDF_WRITE_DATA;
             cmd[1] = 0x01;
@@ -669,17 +669,17 @@ void mifare_df_commands_execute(uint8_t *buff, size_t len)
             cmd[4] = 0x00;
             sprintf(&cmd[5], "Ala ma kota");
             binary_protocol_send(cmd, 17);
-            own_printf( "==> Writing to data file - ");
-        break;
+            own_printf("==> Writing to data file - ");
+            break;
         case CMD_MFDF_WRITE_DATA:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_MFDF_COMMIT_TRANSACTION;
             operation_to_commit = CMD_MFDF_WRITE_DATA;
             binary_protocol_send(cmd, 1);
-            own_printf( "==> Commit last write - ");
-        break;
+            own_printf("==> Commit last write - ");
+            break;
         case CMD_MFDF_COMMIT_TRANSACTION:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             if (operation_to_commit == CMD_MFDF_WRITE_DATA)
             {
                 cmd[0] = CMD_MFDF_READ_DATA;
@@ -690,14 +690,14 @@ void mifare_df_commands_execute(uint8_t *buff, size_t len)
                 cmd[5] = 0;
                 cmd[6] = 0;
                 binary_protocol_send(cmd, 7);
-                own_printf( "==> Reading data file - ");
+                own_printf("==> Reading data file - ");
             }
             else if (operation_to_commit == CMD_MFDF_CREDIT || operation_to_commit == CMD_MFDF_DEBIT)
             {
                 cmd[0] = CMD_MFDF_GET_VALUE;
                 cmd[1] = 0x02;
                 binary_protocol_send(cmd, 2);
-                own_printf( "==> Get value from file - ");
+                own_printf("==> Get value from file - ");
             }
             else if (operation_to_commit == CMD_MFDF_WRITE_RECORD)
             {
@@ -708,13 +708,13 @@ void mifare_df_commands_execute(uint8_t *buff, size_t len)
                     test_record.nr = idle_count;
                     sprintf(test_record.text, "This is record nr %d", test_record.nr);
                     memcpy(&cmd[2], &test_record, sizeof(test_record));
-                    binary_protocol_send(cmd, 2+sizeof(test_record));
-                    own_printf( "==> Writing record %d - ", idle_count);
+                    binary_protocol_send(cmd, 2 + sizeof(test_record));
+                    own_printf("==> Writing record %d - ", idle_count);
                     idle_count++;
                 }
                 else
                 {
-                    idle_count=0;
+                    idle_count = 0;
                     cmd[0] = CMD_MFDF_READ_RECORD;
                     cmd[1] = 0x03;
                     val16 = idle_count;
@@ -722,7 +722,7 @@ void mifare_df_commands_execute(uint8_t *buff, size_t len)
                     val16 = sizeof(test_record);
                     memcpy(&cmd[4], &val16, 2);
                     binary_protocol_send(cmd, 6);
-                    own_printf( "==> Reading record %d - ", idle_count);
+                    own_printf("==> Reading record %d - ", idle_count);
                 }
             }
             else if (operation_to_commit == CMD_MFDF_CLEAR_RECORDS)
@@ -731,11 +731,11 @@ void mifare_df_commands_execute(uint8_t *buff, size_t len)
                 cmd[0] = CMD_MFDF_DELETE_FILE;
                 cmd[1] = idle_count;
                 binary_protocol_send(cmd, 2);
-                own_printf( "==> Delete file %d - ", idle_count);
+                own_printf("==> Delete file %d - ", idle_count);
             }
-        break;
+            break;
         case CMD_MFDF_READ_DATA:
-            own_printf( "%s\n", &buff[2]);
+            own_printf("%s\n", &buff[2]);
 
             cmd[0] = CMD_MFDF_CREATE_VALUE_FILE;
             cmd[1] = 0x02;
@@ -753,19 +753,19 @@ void mifare_df_commands_execute(uint8_t *buff, size_t len)
             cmd[16] = 0x01;
             cmd[17] = 0x01;
             binary_protocol_send(cmd, 18);
-            own_printf( "==> Create value file - ");
-        break;
+            own_printf("==> Create value file - ");
+            break;
         case CMD_MFDF_CREATE_VALUE_FILE:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_MFDF_GET_VALUE;
             cmd[1] = 0x02;
             binary_protocol_send(cmd, 2);
-            own_printf( "==> Read value from file - ");
+            own_printf("==> Read value from file - ");
             idle_count = 0;
-        break;
+            break;
         case CMD_MFDF_GET_VALUE:
             memcpy(&ival32, &buff[2], 4);
-            own_printf( "(%d)\n", ival32);
+            own_printf("(%d)\n", ival32);
             if (operation_to_commit == CMD_MFDF_WRITE_DATA)
             {
                 cmd[0] = CMD_MFDF_CREDIT;
@@ -773,7 +773,7 @@ void mifare_df_commands_execute(uint8_t *buff, size_t len)
                 ival32 = 10;
                 memcpy(&cmd[2], &ival32, 4);
                 binary_protocol_send(cmd, 6);
-                own_printf( "==> Get credit 10 - ");
+                own_printf("==> Get credit 10 - ");
             }
             else if (operation_to_commit == CMD_MFDF_CREDIT)
             {
@@ -782,7 +782,7 @@ void mifare_df_commands_execute(uint8_t *buff, size_t len)
                 ival32 = 25;
                 memcpy(&cmd[2], &ival32, 4);
                 binary_protocol_send(cmd, 6);
-                own_printf( "==> Get debit 25 - ");
+                own_printf("==> Get debit 25 - ");
             }
             else if (operation_to_commit == CMD_MFDF_DEBIT)
             {
@@ -799,34 +799,34 @@ void mifare_df_commands_execute(uint8_t *buff, size_t len)
 
                 cmd[8] = 1;
                 binary_protocol_send(cmd, 9);
-                own_printf( "==> Create record file - ");
+                own_printf("==> Create record file - ");
                 idle_count = 0;
             }
-        break;
+            break;
         case CMD_MFDF_CREDIT:
         case CMD_MFDF_DEBIT:
         case CMD_MFDF_WRITE_RECORD:
         case CMD_MFDF_CLEAR_RECORDS:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_MFDF_COMMIT_TRANSACTION;
             binary_protocol_send(cmd, 1);
             operation_to_commit = buff[1];
-            own_printf( "==> Commit last operation - ");
-        break;
+            own_printf("==> Commit last operation - ");
+            break;
         case CMD_MFDF_CREATE_RECORD_FILE:
-                own_printf( "OK\n");
-                cmd[0] = CMD_MFDF_WRITE_RECORD;
-                cmd[1] = 0x03;
-                test_record.nr = idle_count;
-                sprintf(test_record.text, "This is record nr %d", test_record.nr);
-                memcpy(&cmd[2], &test_record, sizeof(test_record));
-                binary_protocol_send(cmd, 2+sizeof(test_record));
-                own_printf( "==> Writing record %d - ", idle_count);
-                idle_count++;
+            own_printf("OK\n");
+            cmd[0] = CMD_MFDF_WRITE_RECORD;
+            cmd[1] = 0x03;
+            test_record.nr = idle_count;
+            sprintf(test_record.text, "This is record nr %d", test_record.nr);
+            memcpy(&cmd[2], &test_record, sizeof(test_record));
+            binary_protocol_send(cmd, 2 + sizeof(test_record));
+            own_printf("==> Writing record %d - ", idle_count);
+            idle_count++;
             break;
         case CMD_MFDF_READ_RECORD:
             idle_count++;
-            memcpy(&test_record, buff+2, len -2);
+            memcpy(&test_record, buff + 2, len - 2);
             own_printf("Nr %d, data: \"%s\"\n", test_record.nr, test_record.text);
             if (idle_count < 9)
             {
@@ -837,25 +837,25 @@ void mifare_df_commands_execute(uint8_t *buff, size_t len)
                 val16 = sizeof(test_record);
                 memcpy(&cmd[4], &val16, 2);
                 binary_protocol_send(cmd, 6);
-                own_printf( "==> Reading record %d - ", idle_count);
+                own_printf("==> Reading record %d - ", idle_count);
             }
             else
             {
                 cmd[0] = CMD_MFDF_CLEAR_RECORDS;
                 cmd[1] = 0x03;
                 binary_protocol_send(cmd, 2);
-                own_printf( "==> Clear records %d - ", idle_count);
+                own_printf("==> Clear records %d - ", idle_count);
             }
-        break;
+            break;
         case CMD_MFDF_DELETE_FILE:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             idle_count++;
             if (idle_count < 3)
             {
                 cmd[0] = CMD_MFDF_DELETE_FILE;
                 cmd[1] = idle_count;
                 binary_protocol_send(cmd, 2);
-                own_printf( "==> Delete file %d - ", idle_count);
+                own_printf("==> Delete file %d - ", idle_count);
             }
             else
             {
@@ -864,136 +864,163 @@ void mifare_df_commands_execute(uint8_t *buff, size_t len)
                 cmd[2] = 0x55;
                 cmd[3] = 0xAA;
                 binary_protocol_send(cmd, 4);
-                own_printf( "==> Delete app %02X %02X %02X - ", cmd[1], cmd[2], cmd[3]);
+                own_printf("==> Delete app %02X %02X %02X - ", cmd[1], cmd[2], cmd[3]);
             }
-        break;
+            break;
         case CMD_MFDF_DELETE_APP:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_SET_POLLING;
             cmd[1] = 1;
             binary_protocol_send(cmd, 2);
-            own_printf( "==> Enable polling - ");
-        break;
+            own_printf("==> Enable polling - ");
+            break;
         case CMD_SET_POLLING:
-            own_printf( "OK\n");
-            own_printf( "Test finished\n");
-        break;
+            own_printf("OK\n");
+            own_printf("Test finished\n");
+            break;
 
-    }
+        }
 }
 
-void mifare_icode_commands_execute(uint8_t *buff, size_t len)
+void mifare_icode_commands_execute(uint8_t* buff, size_t len)
 {
     uint8_t cmd[4096];
+    uint8_t ndef_msg[256];
     uint8_t blk_cnt = 0;
     uint8_t byte_cnt = 0;
-    uint16_t bitmap_byte_cnt = 0;
+    uint16_t bitmap_byte_cnt[128];
     uint8_t msg_len = 0;
     uint32_t val32;
     static uint8_t tag_count;
 
     srand(time(0));
 
-    blk_cnt = sizeof(table1) / 4;
-    byte_cnt = sizeof(table1);
-    bitmap_byte_cnt = sizeof(table3);
-    msg_len = byte_cnt + 3;
+    blk_cnt = sizeof(bitmap[0]) / 4;
 
     if (buff[0] == CMD_ERROR)
     {
-        own_printf( "Command 0x%02X failed with ERROR 0x%02X%02X!!!\n", buff[1], buff[2], buff[3]);
+        own_printf("Command 0x%02X failed with ERROR 0x%02X%02X!!!\n", buff[1], buff[2], buff[3]);
     }
     else if (buff[0] == CMD_ACK)
-    switch (buff[1])
-    {
+        switch (buff[1])
+        {
         case CMD_DUMMY_COMMAND:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_GET_TAG_COUNT;
             binary_protocol_send(cmd, 1);
-            own_printf( "==> Get tag count = ");
-        break;
+            own_printf("==> Get tag count = ");
+            break;
         case CMD_GET_TAG_COUNT:
             tag_count = buff[2];
-            own_printf( "%d\n", tag_count);
+            own_printf("%d\n", tag_count);
             if (tag_count > 0)
             {
                 cmd[0] = CMD_GET_UID;
-                cmd[1] = tag_count-1;
+                cmd[1] = tag_count - 1;
                 binary_protocol_send(cmd, 2);
-                own_printf( "==> Get UID info: ");
+                own_printf("==> Get UID info: ");
             }
             else
             {
                 cmd[0] = CMD_SET_POLLING;
                 cmd[1] = 1;
                 binary_protocol_send(cmd, 2);
-                own_printf( "==> Enable polling - ");
+                own_printf("==> Enable polling - ");
             }
-        break;
+            break;
         case CMD_GET_UID:
-            own_printf("type: 0x%02X, param: 0x%02X, UID len: 0x%02X, UID: ", buff[2], buff[3], len-4);
-            for (uint8_t k=0; k< len-4; k++)
-                own_printf( " 0x%02X", buff[k+4]);
-            own_printf( "\n");
+            own_printf("type: 0x%02X, param: 0x%02X, UID len: 0x%02X, UID: ", buff[2], buff[3], len - 4);
+            for (uint8_t k = 0; k < len - 4; k++)
+                own_printf(" 0x%02X", buff[k + 4]);
+            own_printf("\n");
 
             cmd[0] = CMD_ICODE_WRITE_BLOCK;
-            cmd[1] = 2;
+
+            uint8_t i = 0;
+            uint8_t current_idx = 0;
+            // for (uint8_t i = 0; i < 122; i++)
+            // {
+            bitmap_byte_cnt[i] = sizeof(bitmap[i]);
+            cmd[1] = 2 + (blk_cnt * i);
+            ndef_msg[current_idx++] = 0x03;
+            ndef_msg[current_idx++] = bitmap_byte_cnt[i] + 3 + 4;
+            ndef_msg[current_idx++] = 0xD1;
+            ndef_msg[current_idx++] = 0x01;
+            ndef_msg[current_idx++] = bitmap_byte_cnt[i] + 3;
+            ndef_msg[current_idx++] = 0x54;
+            ndef_msg[current_idx++] = 0x02;
+            ndef_msg[current_idx++] = 0x65;
+            ndef_msg[current_idx++] = 0x6E;
+            memcpy((ndef_msg + (current_idx)), bitmap[i], bitmap_byte_cnt[i]);
+            ndef_msg[bitmap_byte_cnt[i] + current_idx++] = 0xFE;
+            memcpy((cmd + 3), ndef_msg, (bitmap_byte_cnt[i] + current_idx));
+
+            msg_len = (bitmap_byte_cnt[i] + current_idx + 3);
+            blk_cnt = (msg_len / 4);
             cmd[2] = blk_cnt;
-            // for (uint16_t k=0; k< byte_cnt; k++)
-            //     cmd[k+3] = k;
-            memcpy((cmd+3), table1, byte_cnt);
 
             binary_protocol_send(cmd, msg_len);
-            own_printf( "==> Write block: ");
-        break;
+            own_printf("==> Write block: ");
+            current_idx = 0;
+
+            own_printf("OK\n");
+            cmd[0] = CMD_ICODE_READ_BLOCK;
+            cmd[1] = 2 + i;
+            cmd[2] = blk_cnt;
+            memset((cmd + 3), 0, bitmap_byte_cnt[i]);
+            binary_protocol_send(cmd, 3);
+            own_printf("==> Read block:");
+            // }
+
+            break;
         case CMD_ICODE_WRITE_BLOCK:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_ICODE_READ_BLOCK;
             cmd[1] = 2;
             cmd[2] = blk_cnt;
 
             binary_protocol_send(cmd, 3);
-            own_printf( "==> Read block:");
-        break;
+            own_printf("==> Read block:");
+            break;
         case CMD_ICODE_READ_BLOCK:
-            for (uint8_t k=2; k< len; k++)
-                own_printf( " 0x%02X", buff[k]);
-            own_printf( "\n");
+            for (uint8_t k = 2; k < len; k++)
+                own_printf(" 0x%02X", buff[k]);
+            own_printf("\n");
 
             cmd[0] = CMD_ICODE_GET_SYSTEM_INFORMATION;
             binary_protocol_send(cmd, 1);
-            own_printf( "==> Get system information: ");
-        break;
+            own_printf("==> Get system information: ");
+            break;
         case CMD_ICODE_GET_SYSTEM_INFORMATION:
-            for (uint8_t k=2; k< len; k++)
-                own_printf( " 0x%02X", buff[k]);
-            own_printf( "\n");
+            for (uint8_t k = 2; k < len; k++)
+                own_printf(" 0x%02X", buff[k]);
+            own_printf("\n");
 
             cmd[0] = CMD_ICODE_GET_MULTIPLE_BSS;
             cmd[1] = 0;
             cmd[2] = 10;
             binary_protocol_send(cmd, 3);
-            own_printf( "==> Get multiple block security status: ");
-        break;
+            own_printf("==> Get multiple block security status: ");
+            break;
         case CMD_ICODE_GET_MULTIPLE_BSS:
-            for (uint8_t k=2; k< len; k++)
-                own_printf( " 0x%02X", buff[k]);
-            own_printf( "\n");
+            for (uint8_t k = 2; k < len; k++)
+                own_printf(" 0x%02X", buff[k]);
+            own_printf("\n");
 
             cmd[0] = CMD_SET_POLLING;
             cmd[1] = 1;
             binary_protocol_send(cmd, 2);
-            own_printf( "==> Enable polling - ");
-        break;
+            own_printf("==> Enable polling - ");
+            break;
         case CMD_SET_POLLING:
-            own_printf( "OK\n");
-            own_printf( "Test finished\n");
+            own_printf("OK\n");
+            own_printf("Test finished\n");
             exit(0);
-        break;
-    }
+            break;
+        }
 }
 
-void mifare_net_commands_execute(uint8_t *buff, size_t len)
+void mifare_net_commands_execute(uint8_t* buff, size_t len)
 {
     uint8_t cmd[4096];
     uint32_t val32;
@@ -1003,105 +1030,105 @@ void mifare_net_commands_execute(uint8_t *buff, size_t len)
 
     if (buff[0] == CMD_ERROR)
     {
-        own_printf( "Command 0x%02X failed with ERROR 0x%02X%02X!!!\n", buff[1], buff[2], buff[3]);
+        own_printf("Command 0x%02X failed with ERROR 0x%02X%02X!!!\n", buff[1], buff[2], buff[3]);
     }
     else if (buff[0] == CMD_ACK)
-    switch (buff[1])
-    {
+        switch (buff[1])
+        {
         case CMD_DUMMY_COMMAND:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             cmd[0] = CMD_SET_NET_CFG;
             cmd[1] = 0x00; //mode
             cmd[2] = 0x01; //client
             binary_protocol_send(cmd, 3);
-            own_printf( "==> Set mode to client: ");
-        break;
+            own_printf("==> Set mode to client: ");
+            break;
         case CMD_SET_NET_CFG:
-            own_printf( "OK\n");
+            own_printf("OK\n");
             switch (buff[2])
             {
-                case 0x00: //mode ACK
-                    cmd[0] = CMD_SET_NET_CFG;
-                    cmd[1] = 0x03; //ssid
-                    strcpy((char*)&cmd[2], TEST_SSID);
+            case 0x00: //mode ACK
+                cmd[0] = CMD_SET_NET_CFG;
+                cmd[1] = 0x03; //ssid
+                strcpy((char*)&cmd[2], TEST_SSID);
 
-                    binary_protocol_send(cmd, strlen(TEST_SSID) +2);
-                    own_printf( "==> Set ssid to: %s - ", TEST_SSID);
+                binary_protocol_send(cmd, strlen(TEST_SSID) + 2);
+                own_printf("==> Set ssid to: %s - ", TEST_SSID);
                 break;
-                case 0x03: //ssid ACK
-                    cmd[0] = CMD_SET_NET_CFG;
-                    cmd[1] = 0x04; //wifi password
-                    strcpy((char*)&cmd[2], TEST_PASSWORD);
+            case 0x03: //ssid ACK
+                cmd[0] = CMD_SET_NET_CFG;
+                cmd[1] = 0x04; //wifi password
+                strcpy((char*)&cmd[2], TEST_PASSWORD);
 
-                    binary_protocol_send(cmd, strlen(TEST_PASSWORD) +2);
-                    own_printf( "==> Set wifi password - ");
+                binary_protocol_send(cmd, strlen(TEST_PASSWORD) + 2);
+                own_printf("==> Set wifi password - ");
                 break;
-                case 0x04: //password ACK
-                    cmd[0] = CMD_SET_NET_CFG;
-                    cmd[1] = 0x05; //fixed ip
-                    cmd[2] = 0x01; //on
+            case 0x04: //password ACK
+                cmd[0] = CMD_SET_NET_CFG;
+                cmd[1] = 0x05; //fixed ip
+                cmd[2] = 0x01; //on
 
-                    binary_protocol_send(cmd, 3);
-                    own_printf( "==> Disabling DHCP: ");
+                binary_protocol_send(cmd, 3);
+                own_printf("==> Disabling DHCP: ");
                 break;
-                case 0x05: //fixed ip ACK
-                    cmd[0] = CMD_SET_NET_CFG;
-                    cmd[1] = 0x06; //ip
-                    cmd[2] = 172;
-                    cmd[3] = 16;
-                    cmd[4] = 16;
-                    cmd[5] = 62;
+            case 0x05: //fixed ip ACK
+                cmd[0] = CMD_SET_NET_CFG;
+                cmd[1] = 0x06; //ip
+                cmd[2] = 172;
+                cmd[3] = 16;
+                cmd[4] = 16;
+                cmd[5] = 62;
 
-                    binary_protocol_send(cmd, 6);
-                    own_printf( "==> Setting IP address to %d.%d.%d.%d: ", cmd[2], cmd[3], cmd[4], cmd[5]);
+                binary_protocol_send(cmd, 6);
+                own_printf("==> Setting IP address to %d.%d.%d.%d: ", cmd[2], cmd[3], cmd[4], cmd[5]);
                 break;
 
-                case 0x06: //ip ACK
-                    cmd[0] = CMD_SET_NET_CFG;
-                    cmd[1] = 0x07; //netmask
-                    cmd[2] = 255;
-                    cmd[3] = 255;
-                    cmd[4] = 255;
-                    cmd[5] = 0;
+            case 0x06: //ip ACK
+                cmd[0] = CMD_SET_NET_CFG;
+                cmd[1] = 0x07; //netmask
+                cmd[2] = 255;
+                cmd[3] = 255;
+                cmd[4] = 255;
+                cmd[5] = 0;
 
-                    binary_protocol_send(cmd, 6);
-                    own_printf( "==> Setting netmask to %d.%d.%d.%d: ", cmd[2], cmd[3], cmd[4], cmd[5]);
+                binary_protocol_send(cmd, 6);
+                own_printf("==> Setting netmask to %d.%d.%d.%d: ", cmd[2], cmd[3], cmd[4], cmd[5]);
                 break;
-                case 0x07: //netmask ACK
-                    cmd[0] = CMD_SET_NET_CFG;
-                    cmd[1] = 0x08; //gateway
-                    cmd[2] = 172;
-                    cmd[3] = 16;
-                    cmd[4] = 16;
-                    cmd[5] = 6;
+            case 0x07: //netmask ACK
+                cmd[0] = CMD_SET_NET_CFG;
+                cmd[1] = 0x08; //gateway
+                cmd[2] = 172;
+                cmd[3] = 16;
+                cmd[4] = 16;
+                cmd[5] = 6;
 
-                    binary_protocol_send(cmd, 6);
-                    own_printf( "==> Setting gateway to %d.%d.%d.%d: ", cmd[2], cmd[3], cmd[4], cmd[5]);
+                binary_protocol_send(cmd, 6);
+                own_printf("==> Setting gateway to %d.%d.%d.%d: ", cmd[2], cmd[3], cmd[4], cmd[5]);
                 break;
-                case 0x08: //gateway ACK
-                    cmd[0] = CMD_SET_NET_CFG;
-                    cmd[1] = 0x09; //dns
-                    cmd[2] = 8;
-                    cmd[3] = 8;
-                    cmd[4] = 8;
-                    cmd[5] = 8;
+            case 0x08: //gateway ACK
+                cmd[0] = CMD_SET_NET_CFG;
+                cmd[1] = 0x09; //dns
+                cmd[2] = 8;
+                cmd[3] = 8;
+                cmd[4] = 8;
+                cmd[5] = 8;
 
-                    binary_protocol_send(cmd, 6);
-                    own_printf( "==> Setting DNS to %d.%d.%d.%d: ", cmd[2], cmd[3], cmd[4], cmd[5]);
+                binary_protocol_send(cmd, 6);
+                own_printf("==> Setting DNS to %d.%d.%d.%d: ", cmd[2], cmd[3], cmd[4], cmd[5]);
                 break;
-                case 0x09: //dhcp ACK
-                    cmd[0] = CMD_REBOOT;
-                    binary_protocol_send(cmd, 1);
-                    own_printf( "==> Rebooting device: ");
+            case 0x09: //dhcp ACK
+                cmd[0] = CMD_REBOOT;
+                binary_protocol_send(cmd, 1);
+                own_printf("==> Rebooting device: ");
                 break;
             }
-        break;
+            break;
         case CMD_REBOOT:
-            own_printf( "OK\n");
-            own_printf( "Test finished\n");
+            own_printf("OK\n");
+            own_printf("Test finished\n");
             exit(0);
-        break;
-    }
+            break;
+        }
 }
 
 
@@ -1112,18 +1139,18 @@ void mifare_net_commands_execute(uint8_t *buff, size_t len)
 */
 void print_usage()
 {
-  own_printf( "\nUsage: c1-tool [device path]\n");
-  own_printf( "Available commands:\n");
-  own_printf( " mc       - perform test on Mifare Clasics tag\n");
-  own_printf( " mul      - perform test on Mifare Ultralight tag\n");
-  own_printf( " mdf      - perform test on Mifare Desfire tag\n");
-  own_printf( " ic       - perform test on ICODE tag\n");
-  own_printf( " net      - network configurtion test\n");
+    own_printf("\nUsage: c1-tool [device path]\n");
+    own_printf("Available commands:\n");
+    own_printf(" mc       - perform test on Mifare Clasics tag\n");
+    own_printf(" mul      - perform test on Mifare Ultralight tag\n");
+    own_printf(" mdf      - perform test on Mifare Desfire tag\n");
+    own_printf(" ic       - perform test on ICODE tag\n");
+    own_printf(" net      - network configurtion test\n");
 
-  if (serial_fd != -1)
-    close(serial_fd);
-  own_printf( "\n");
-  exit(EXIT_FAILURE);
+    if (serial_fd != -1)
+        close(serial_fd);
+    own_printf("\n");
+    exit(EXIT_FAILURE);
 }
 
 void loop_test(void)
@@ -1136,7 +1163,7 @@ void loop_test(void)
 
     cmd[0] = CMD_DUMMY_COMMAND;
     binary_protocol_send(cmd, 1);
-    own_printf( "==> Dummy command: ");
+    own_printf("==> Dummy command: ");
     while (1)
     {
         tv.tv_sec = 1;
@@ -1146,27 +1173,27 @@ void loop_test(void)
 
         fdmax = serial_fd;
 
-        retval = select(fdmax+1, &rfds, NULL, NULL, &tv);
+        retval = select(fdmax + 1, &rfds, NULL, NULL, &tv);
 
         if (retval == -1)
         {
-          perror("select()");
-          own_printf("select(serial_fd: %d)\n", serial_fd);
-          return;
+            perror("select()");
+            own_printf("select(serial_fd: %d)\n", serial_fd);
+            return;
         }
         else if (retval)
         {
-          if (FD_ISSET(serial_fd, &rfds))
-          {
-            do
+            if (FD_ISSET(serial_fd, &rfds))
             {
-              lenght = read(serial_fd, buff, sizeof(buff));
-              if (lenght > 0)
-              {
-                binary_protocol_parse(buff, lenght);
-              }
-            } while (lenght > 0);
-          }
+                do
+                {
+                    lenght = read(serial_fd, buff, sizeof(buff));
+                    if (lenght > 0)
+                    {
+                        binary_protocol_parse(buff, lenght);
+                    }
+                } while (lenght > 0);
+            }
         }
         else
         {
@@ -1175,7 +1202,7 @@ void loop_test(void)
     }
 }
 
-int parse_commands(int argc, char * argv[])
+int parse_commands(int argc, char* argv[])
 {
     if (strcmp(argv[2], "mc") == 0)
     {
@@ -1213,7 +1240,7 @@ int parse_commands(int argc, char * argv[])
     return -1;
 }
 
-static int setargs(char *args, char **argv)
+static int setargs(char* args, char** argv)
 {
     int count = 0;
 
@@ -1234,18 +1261,18 @@ static int setargs(char *args, char **argv)
     return count;
 }
 
-char **parsedargs(char *args, int *argc)
+char** parsedargs(char* args, int* argc)
 {
-    char **argv = NULL;
+    char** argv = NULL;
     int    argn = 0;
 
     if (args && *args
-            && (args = strdup(args))
-            && (argn = setargs(args,NULL))
-            && (argv = malloc((argn+1) * sizeof(char *))))
+        && (args = strdup(args))
+        && (argn = setargs(args, NULL))
+        && (argv = malloc((argn + 1) * sizeof(char*))))
     {
         *argv++ = args;
-        argn = setargs(args,argv);
+        argn = setargs(args, argv);
     }
 
     if (args && !argv)
@@ -1255,16 +1282,16 @@ char **parsedargs(char *args, int *argc)
     return argv;
 }
 
-void freeparsedargs(char **argv)
+void freeparsedargs(char** argv)
 {
     if (argv)
     {
         free(argv[-1]);
-        free(argv-1);
+        free(argv - 1);
     }
 }
 
-int main(int argc, char * argv[])
+int main(int argc, char* argv[])
 {
     uint8_t rxBuff[MAX_FRAME_SIZE * 2];
     uint8_t txBuff[MAX_FRAME_SIZE * 2];
@@ -1272,7 +1299,7 @@ int main(int argc, char * argv[])
     int optind, res;
 
     if (argc < 3)
-      print_usage();
+        print_usage();
 
 
     if (strncmp("/dev/", argv[1], 5) == 0)
