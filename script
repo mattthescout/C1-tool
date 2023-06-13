@@ -1,0 +1,9 @@
+#
+#
+#
+#
+#
+
+make clean
+make
+sudo ./c1-tool /dev/ttyUSB0 ic

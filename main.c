@@ -885,8 +885,9 @@ void mifare_df_commands_execute(uint8_t* buff, size_t len)
 void mifare_icode_commands_execute(uint8_t* buff, size_t len)
 {
     uint8_t cmd[4096];
-    uint8_t ndef_msg[256];
-    uint8_t blk_cnt = 0;
+    uint8_t ndef_msg[512];
+    static uint8_t blk_cnt = 0;
+    uint8_t blk_cnt_modulo = 0;
     uint8_t byte_cnt = 0;
     uint16_t bitmap_byte_cnt[128];
     uint8_t msg_len = 0;
@@ -934,42 +935,104 @@ void mifare_icode_commands_execute(uint8_t* buff, size_t len)
                 own_printf(" 0x%02X", buff[k + 4]);
             own_printf("\n");
 
-            cmd[0] = CMD_ICODE_WRITE_BLOCK;
 
             uint8_t i = 0;
             uint8_t current_idx = 0;
+            uint32_t bitmap_length = 0;
+            uint8_t* p_ndef_msg = 0;
+            uint8_t record_header = 0;
+
+            cmd[0] = CMD_ICODE_WRITE_BLOCK;
+
             // for (uint8_t i = 0; i < 122; i++)
             // {
             bitmap_byte_cnt[i] = sizeof(bitmap[i]);
-            cmd[1] = 2 + (blk_cnt * i);
+            // bitmap_length += bitmap_byte_cnt[i];
+
+            if (i == 0)
+            {
+                record_header = 0x91;
+            }
+            else if (i == 121)
+            {
+                record_header = 0x51;
+            }
+            else
+            {
+                record_header = 0x11;
+            }
+
             ndef_msg[current_idx++] = 0x03;
             ndef_msg[current_idx++] = bitmap_byte_cnt[i] + 3 + 4;
-            ndef_msg[current_idx++] = 0xD1;
+            ndef_msg[current_idx++] = record_header;
             ndef_msg[current_idx++] = 0x01;
             ndef_msg[current_idx++] = bitmap_byte_cnt[i] + 3;
             ndef_msg[current_idx++] = 0x54;
             ndef_msg[current_idx++] = 0x02;
             ndef_msg[current_idx++] = 0x65;
             ndef_msg[current_idx++] = 0x6E;
-            memcpy((ndef_msg + (current_idx)), bitmap[i], bitmap_byte_cnt[i]);
+            p_ndef_msg = ndef_msg + current_idx;
+
+            memcpy(p_ndef_msg, bitmap[i], bitmap_byte_cnt[i]);
+
             ndef_msg[bitmap_byte_cnt[i] + current_idx++] = 0xFE;
             memcpy((cmd + 3), ndef_msg, (bitmap_byte_cnt[i] + current_idx));
 
             msg_len = (bitmap_byte_cnt[i] + current_idx + 3);
-            blk_cnt = (msg_len / 4);
-            cmd[2] = blk_cnt;
+            blk_cnt_modulo = (bitmap_byte_cnt[i] + current_idx) % 4;
+            blk_cnt = ((bitmap_byte_cnt[i] + current_idx) / 4);
+
+
+            if (blk_cnt_modulo == 0)
+            {
+                cmd[2] = blk_cnt;
+            }
+            else
+            {
+                blk_cnt += 1;
+                cmd[2] = blk_cnt;
+                switch (blk_cnt_modulo)
+                {
+                case 1:
+                    cmd[msg_len++] = 0xFE;
+                    cmd[msg_len++] = 0xFE;
+                    cmd[msg_len++] = 0xFE;
+                    break;
+
+                case 2:
+                    cmd[msg_len++] = 0xFE;
+                    cmd[msg_len++] = 0xFE;
+                    break;
+
+                case 3:
+                    cmd[msg_len++] = 0xFE;
+                    break;
+
+                default:
+                    break;
+                }
+            }
+
+            cmd[1] = 2 + (blk_cnt * i);
 
             binary_protocol_send(cmd, msg_len);
             own_printf("==> Write block: ");
             current_idx = 0;
 
-            own_printf("OK\n");
-            cmd[0] = CMD_ICODE_READ_BLOCK;
-            cmd[1] = 2 + i;
-            cmd[2] = blk_cnt;
-            memset((cmd + 3), 0, bitmap_byte_cnt[i]);
-            binary_protocol_send(cmd, 3);
-            own_printf("==> Read block:");
+            // own_printf("OK\n");
+            // cmd[0] = CMD_ICODE_READ_BLOCK;
+            // cmd[1] = 2 + i;
+            // cmd[2] = blk_cnt;
+            // memset((cmd + 3), 0, bitmap_byte_cnt[i]);
+            // binary_protocol_send(cmd, 3);
+            // own_printf("==> Read block:");
+            // for (uint8_t k = 2; k < msg_len; k++)
+            //     own_printf(" 0x%02X", buff[k]);
+            // own_printf("\n");
+            for (uint32_t i = 0; i < 10000000; i++)
+            {
+                /* code */
+            }
             // }
 
             break;
@@ -977,13 +1040,18 @@ void mifare_icode_commands_execute(uint8_t* buff, size_t len)
             own_printf("OK\n");
             cmd[0] = CMD_ICODE_READ_BLOCK;
             cmd[1] = 2;
-            cmd[2] = blk_cnt;
+            cmd[2] = 128;
 
             binary_protocol_send(cmd, 3);
             own_printf("==> Read block:");
+
+            for (uint32_t i = 0; i < 6000000; i++)
+            {
+                /* code */
+            }
             break;
         case CMD_ICODE_READ_BLOCK:
-            for (uint8_t k = 2; k < len; k++)
+            for (uint8_t k = 2; k < 128; k++)
                 own_printf(" 0x%02X", buff[k]);
             own_printf("\n");
 
