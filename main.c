@@ -884,13 +884,13 @@ void mifare_df_commands_execute(uint8_t* buff, size_t len)
 
 void mifare_icode_commands_execute(uint8_t* buff, size_t len)
 {
-    uint8_t cmd[4096];
-    uint8_t ndef_msg[512];
-    static uint8_t blk_cnt = 0;
-    uint8_t blk_cnt_modulo = 0;
-    uint8_t byte_cnt = 0;
+    uint8_t cmd[8192];
+    uint8_t ndef_msg[8192];
+    static uint16_t blk_cnt = 0;
+    uint16_t blk_cnt_modulo = 0;
+    uint16_t byte_cnt = 0;
     uint16_t bitmap_byte_cnt[128];
-    uint8_t msg_len = 0;
+    uint16_t msg_len = 0;
     uint32_t val32;
     static uint8_t tag_count;
 
@@ -939,49 +939,52 @@ void mifare_icode_commands_execute(uint8_t* buff, size_t len)
             uint8_t i = 0;
             uint8_t current_idx = 0;
             uint32_t bitmap_length = 0;
+            uint32_t payload_length = 0;
+            uint32_t ndef_length = 0;
             uint8_t* p_ndef_msg = 0;
             uint8_t record_header = 0;
 
             cmd[0] = CMD_ICODE_WRITE_BLOCK;
 
-            // for (uint8_t i = 0; i < 122; i++)
-            // {
-            bitmap_byte_cnt[i] = sizeof(bitmap[i]);
-            // bitmap_length += bitmap_byte_cnt[i];
+            for (uint8_t i = 0; i < 4; i++)
+            {
+                bitmap_byte_cnt[i] = sizeof(bitmap[i]);
+                bitmap_length += bitmap_byte_cnt[i];
+            }
 
-            if (i == 0)
-            {
-                record_header = 0x91;
-            }
-            else if (i == 121)
-            {
-                record_header = 0x51;
-            }
-            else
-            {
-                record_header = 0x11;
-            }
+            record_header = 0xC1;
+
+            ndef_length = bitmap_length + 3 + 4 + 3;
+            payload_length = bitmap_length + 3;
 
             ndef_msg[current_idx++] = 0x03;
-            ndef_msg[current_idx++] = bitmap_byte_cnt[i] + 3 + 4;
+            ndef_msg[current_idx++] = 0xFF;
+            ndef_msg[current_idx++] = ndef_length >> 8;
+            ndef_msg[current_idx++] = ndef_length & 0xff;
             ndef_msg[current_idx++] = record_header;
             ndef_msg[current_idx++] = 0x01;
-            ndef_msg[current_idx++] = bitmap_byte_cnt[i] + 3;
+            ndef_msg[current_idx++] = 0x00;
+            ndef_msg[current_idx++] = 0x00;
+            ndef_msg[current_idx++] = payload_length >> 8;
+            ndef_msg[current_idx++] = payload_length & 0xFF;
             ndef_msg[current_idx++] = 0x54;
             ndef_msg[current_idx++] = 0x02;
             ndef_msg[current_idx++] = 0x65;
             ndef_msg[current_idx++] = 0x6E;
             p_ndef_msg = ndef_msg + current_idx;
 
-            memcpy(p_ndef_msg, bitmap[i], bitmap_byte_cnt[i]);
+            for (uint8_t i = 0; i < 4; i++)
+            {
+                memcpy(p_ndef_msg + (i* bitmap_byte_cnt[i - 1]), bitmap[i], 
+                        bitmap_byte_cnt[i]);
+            }
 
-            ndef_msg[bitmap_byte_cnt[i] + current_idx++] = 0xFE;
-            memcpy((cmd + 3), ndef_msg, (bitmap_byte_cnt[i] + current_idx));
+            ndef_msg[bitmap_length + current_idx++] = 0xFE;
+            memcpy((cmd + 3), ndef_msg, (bitmap_length + current_idx));
 
-            msg_len = (bitmap_byte_cnt[i] + current_idx + 3);
-            blk_cnt_modulo = (bitmap_byte_cnt[i] + current_idx) % 4;
-            blk_cnt = ((bitmap_byte_cnt[i] + current_idx) / 4);
-
+            msg_len = (bitmap_length + current_idx + 3);
+            blk_cnt_modulo = (bitmap_length + current_idx) % 4;
+            blk_cnt = ((bitmap_length + current_idx) / 4);
 
             if (blk_cnt_modulo == 0)
             {
@@ -1040,15 +1043,10 @@ void mifare_icode_commands_execute(uint8_t* buff, size_t len)
             own_printf("OK\n");
             cmd[0] = CMD_ICODE_READ_BLOCK;
             cmd[1] = 2;
-            cmd[2] = 128;
+            cmd[2] = 4;
 
             binary_protocol_send(cmd, 3);
             own_printf("==> Read block:");
-
-            for (uint32_t i = 0; i < 6000000; i++)
-            {
-                /* code */
-            }
             break;
         case CMD_ICODE_READ_BLOCK:
             for (uint8_t k = 2; k < 128; k++)
