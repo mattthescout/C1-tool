@@ -1032,10 +1032,10 @@ void mifare_icode_commands_execute(uint8_t* buff, size_t len)
             // for (uint8_t k = 2; k < msg_len; k++)
             //     own_printf(" 0x%02X", buff[k]);
             // own_printf("\n");
-            for (uint32_t i = 0; i < 10000000; i++)
-            {
-                /* code */
-            }
+            // for (uint32_t i = 0; i < 100000; i++)
+            // {
+            //     /* code */
+            // }
             // }
 
             break;
