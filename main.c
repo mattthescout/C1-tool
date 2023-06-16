@@ -944,13 +944,16 @@ void mifare_icode_commands_execute(uint8_t* buff, size_t len)
             uint8_t* p_ndef_msg = 0;
             uint8_t record_header = 0;
 
-            cmd[0] = CMD_ICODE_WRITE_BLOCK;
+            cmd[0] = 0xB4;
 
-            for (uint8_t i = 0; i < 4; i++)
-            {
-                bitmap_byte_cnt[i] = sizeof(bitmap[i]);
-                bitmap_length += bitmap_byte_cnt[i];
-            }
+            // for (uint8_t i = 0; i < 4; i++)
+            // {
+            //     bitmap_byte_cnt[i] = sizeof(bitmap[i]);
+            //     bitmap_length += bitmap_byte_cnt[i];
+            // }
+
+            bitmap_length = sizeof(bitmap_all);
+            bitmap_length = bitmap_length / 32;
 
             record_header = 0xC1;
 
@@ -973,53 +976,83 @@ void mifare_icode_commands_execute(uint8_t* buff, size_t len)
             ndef_msg[current_idx++] = 0x6E;
             p_ndef_msg = ndef_msg + current_idx;
 
-            for (uint8_t i = 0; i < 4; i++)
-            {
-                memcpy(p_ndef_msg + (i* bitmap_byte_cnt[i - 1]), bitmap[i], 
-                        bitmap_byte_cnt[i]);
-            }
-
-            ndef_msg[bitmap_length + current_idx++] = 0xFE;
-            memcpy((cmd + 3), ndef_msg, (bitmap_length + current_idx));
-
-            msg_len = (bitmap_length + current_idx + 3);
+            msg_len = (bitmap_length + current_idx + 4);
             blk_cnt_modulo = (bitmap_length + current_idx) % 4;
             blk_cnt = ((bitmap_length + current_idx) / 4);
 
-            if (blk_cnt_modulo == 0)
+            memcpy(p_ndef_msg, bitmap_all, bitmap_length);
+
+            // ndef_msg[bitmap_length + current_idx++] = 0xFE;
+            uint32_t length = (bitmap_length + current_idx + 4) / (960);
+
+            for (uint8_t i = 0; i <= (length); i++)
             {
-                cmd[2] = blk_cnt;
-            }
-            else
-            {
-                blk_cnt += 1;
-                cmd[2] = blk_cnt;
-                switch (blk_cnt_modulo)
+                msg_len = 960;
+                blk_cnt = 960 / 4;
+
+                memcpy((cmd + 4), ndef_msg + (i * blk_cnt), (msg_len - 4));
+
+                cmd[1] = (2 + (blk_cnt * i)) & 0xff;
+                cmd[2] = (2 + (blk_cnt * i)) >> 8;
+                cmd[3] = blk_cnt;
+
+                binary_protocol_send(cmd, msg_len);
+                own_printf("==> Write block: ");
+                for (uint32_t i = 0; i < 1000; i++)
                 {
-                case 1:
-                    cmd[msg_len++] = 0xFE;
-                    cmd[msg_len++] = 0xFE;
-                    cmd[msg_len++] = 0xFE;
-                    break;
-
-                case 2:
-                    cmd[msg_len++] = 0xFE;
-                    cmd[msg_len++] = 0xFE;
-                    break;
-
-                case 3:
-                    cmd[msg_len++] = 0xFE;
-                    break;
-
-                default:
-                    break;
+                    /* code */
                 }
             }
 
-            cmd[1] = 2 + (blk_cnt * i);
 
-            binary_protocol_send(cmd, msg_len);
-            own_printf("==> Write block: ");
+
+            // for (uint8_t i = 0; i < 4; i++)
+            // {
+            //     memcpy(p_ndef_msg + (i * bitmap_byte_cnt[i - 1]), bitmap[i],
+            //         bitmap_byte_cnt[i]);
+            // }
+
+            // ndef_msg[bitmap_length + current_idx++] = 0xFE;
+            // memcpy((cmd + 3), ndef_msg, (bitmap_length + current_idx));
+
+            // msg_len = (bitmap_length + current_idx + 3);
+            // blk_cnt_modulo = (bitmap_length + current_idx) % 4;
+            // blk_cnt = ((bitmap_length + current_idx) / 4);
+
+            // if (blk_cnt_modulo == 0)
+            // {
+            //     cmd[2] = blk_cnt;
+            // }
+            // else
+            // {
+            //     blk_cnt += 1;
+            //     cmd[2] = blk_cnt;
+            //     switch (blk_cnt_modulo)
+            //     {
+            //     case 1:
+            //         cmd[msg_len++] = 0xFE;
+            //         cmd[msg_len++] = 0xFE;
+            //         cmd[msg_len++] = 0xFE;
+            //         break;
+
+            //     case 2:
+            //         cmd[msg_len++] = 0xFE;
+            //         cmd[msg_len++] = 0xFE;
+            //         break;
+
+            //     case 3:
+            //         cmd[msg_len++] = 0xFE;
+            //         break;
+
+            //     default:
+            //         break;
+            //     }
+            // }
+
+            // cmd[1] = 2 + (blk_cnt * i);
+
+            // binary_protocol_send(cmd, msg_len);
+            // own_printf("==> Write block: ");
             current_idx = 0;
 
             // own_printf("OK\n");
