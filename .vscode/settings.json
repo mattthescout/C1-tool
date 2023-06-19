@@ -1,6 +1,11 @@
 {
     "files.associations": {
         "binary_protocol.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "concepts": "c",
+        "cstdio": "c",
+        "type_traits": "c",
+        "new": "c",
+        "typeinfo": "c"
     }
 }

@@ -61,8 +61,8 @@ static const uint16_t CCITTCRCTable [256] = {
 }; 
  
 static __inline uint16_t GetCCITTCRC(const uint8_t* Data, uint32_t Size) { 
-	uint16_t CRC; 
-	uint16_t Temp; 
+	uint32_t CRC; 
+	uint32_t Temp; 
 	uint32_t Index; 
  
 	if (Size == 0) { 
