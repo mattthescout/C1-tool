@@ -968,7 +968,7 @@ void mifare_icode_commands_execute(uint8_t* buff, size_t len)
             p_bitmap_all = bitmap_all;
             // bitmap_length = sizeof(bitmap_all);
             // bitmap_length = bitmap_length / 16;
-            bitmap_length = 2048;
+            bitmap_length = 7168;
 
 
             record_header = 0xC1;
@@ -1021,13 +1021,17 @@ void mifare_icode_commands_execute(uint8_t* buff, size_t len)
                 cmd[2] = (2 + (blk_cnt * i)) >> 8;
                 cmd[3] = blk_cnt;
 
-                memcpy(bitmap_copy + (i * part_msg_length), ndef_msg, part_msg_length);
+                // memcpy(bitmap_copy + (i * part_msg_length), ndef_msg, part_msg_length);
+                for (uint32_t i = 0; i < 10000000; i++)
+                {
+                    i++;
+                }
                 binary_protocol_send(cmd, msg_len);
                 own_printf("==> Write block: ");
 
-                for (uint32_t i = 0; i < 1000; i++)
+                for (uint32_t i = 0; i < 100000000; i++)
                 {
-                    /* code */
+                    i++;
                 }
             }
 
