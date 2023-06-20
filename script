@@ -1,9 +1,7 @@
-#
-#
-#
-#
+#!/bin/bash
+# Author: Mateusz Jaworski
 #
 
 make clean
 make
-sudo ./c1-tool /dev/ttyUSB0 ic
+sudo ./c1-tool /dev/ttyUSB0 ic $1

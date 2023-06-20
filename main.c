@@ -166,12 +166,20 @@ static int open_socket(char* address)
 */
 void uart_protocol_write(uint8_t* data, size_t size)
 {
-    if (0)
+    if (1)
     {
         int i;
+        int cnt = 0;
         own_printf("uart_protocol_write %d bytes\n", size);
         for (i = 0; i < size; i++)
+        {
             own_printf(" 0x%02X", data[i]);
+            if (!(cnt % 16))
+            {
+                own_printf("\n\r");
+            }
+            cnt++;
+        }
         own_printf("\n");
     }
 
@@ -180,7 +188,7 @@ void uart_protocol_write(uint8_t* data, size_t size)
         own_printf("uart_protocol_write error writing!\n");
 }
 
-void mifare_commands_execute(uint8_t* buff, size_t len)
+void mifare_commands_execute(uint8_t* buff, size_t len, char* argv[])
 {
     uint8_t cmd[4096];
     uint32_t val32;
@@ -338,7 +346,7 @@ void mifare_commands_execute(uint8_t* buff, size_t len)
 }
 
 
-void mifare_ul_commands_execute(uint8_t* buff, size_t len)
+void mifare_ul_commands_execute(uint8_t* buff, size_t len, char* argv[])
 {
     uint8_t cmd[4096];
     uint32_t val32;
@@ -481,7 +489,7 @@ void mifare_ul_commands_execute(uint8_t* buff, size_t len)
         }
 }
 
-void mifare_df_commands_execute(uint8_t* buff, size_t len)
+void mifare_df_commands_execute(uint8_t* buff, size_t len, char* argv[])
 {
     uint8_t cmd[4096];
     uint32_t val32;
@@ -884,7 +892,7 @@ void mifare_df_commands_execute(uint8_t* buff, size_t len)
         }
 }
 
-void mifare_icode_commands_execute(uint8_t* buff, size_t len)
+void mifare_icode_commands_execute(uint8_t* buff, size_t len, char* argv[])
 {
     uint8_t cmd[8192];
     uint8_t ndef_msg[8192];
@@ -965,10 +973,24 @@ void mifare_icode_commands_execute(uint8_t* buff, size_t len)
             //     bitmap_length += bitmap_byte_cnt[i];
             // }
 
-            p_bitmap_all = bitmap_all;
-            // bitmap_length = sizeof(bitmap_all);
+            if (strcmp(argv[3], "1") == 0)
+            {
+                p_bitmap_all = bitmap_all;
+                bitmap_length = 7936;
+            }
+            else if (strcmp(argv[3], "2") == 0)
+            {
+                bitmap_length = sizeof(bitmap_all);
+                bitmap_length = bitmap_length - 7936;
+                p_bitmap_all = bitmap_all + bitmap_length;
+
+            }
+            else
+            {
+                own_printf("Add msg number\r\n");
+                break;
+            }
             // bitmap_length = bitmap_length / 16;
-            bitmap_length = 7168;
 
 
             record_header = 0xC1;
@@ -1180,7 +1202,7 @@ void mifare_icode_commands_execute(uint8_t* buff, size_t len)
         }
 }
 
-void mifare_net_commands_execute(uint8_t* buff, size_t len)
+void mifare_net_commands_execute(uint8_t* buff, size_t len, char* argv[])
 {
     uint8_t cmd[4096];
     uint32_t val32;
@@ -1313,7 +1335,7 @@ void print_usage()
     exit(EXIT_FAILURE);
 }
 
-void loop_test(void)
+void loop_test(char* argv[])
 {
     fd_set rfds;
     struct timeval tv;
@@ -1350,7 +1372,7 @@ void loop_test(void)
                     lenght = read(serial_fd, buff, sizeof(buff));
                     if (lenght > 0)
                     {
-                        binary_protocol_parse(buff, lenght);
+                        binary_protocol_parse(buff, lenght, argv);
                     }
                 } while (lenght > 0);
             }
@@ -1368,31 +1390,31 @@ int parse_commands(int argc, char* argv[])
     {
         own_printf("Running Mifare test...\n");
         binary_protocol_init(mifare_commands_execute, uart_protocol_write);
-        loop_test();
+        loop_test(argv);
     }
     else if (strcmp(argv[2], "mul") == 0)
     {
         own_printf("Running Mifare Ultralight test...\n");
         binary_protocol_init(mifare_ul_commands_execute, uart_protocol_write);
-        loop_test();
+        loop_test(argv);
     }
     else if (strcmp(argv[2], "mdf") == 0)
     {
         own_printf("Running Mifare Desfire test...\n");
         binary_protocol_init(mifare_df_commands_execute, uart_protocol_write);
-        loop_test();
+        loop_test(argv);
     }
     else if (strcmp(argv[2], "ic") == 0)
     {
         own_printf("Running ICODE test...\n");
         binary_protocol_init(mifare_icode_commands_execute, uart_protocol_write);
-        loop_test();
+        loop_test(argv);
     }
     else if (strcmp(argv[2], "net") == 0)
     {
         own_printf("Running netowrk set test...\n");
         binary_protocol_init(mifare_net_commands_execute, uart_protocol_write);
-        loop_test();
+        loop_test(argv);
     }
     else
         print_usage();

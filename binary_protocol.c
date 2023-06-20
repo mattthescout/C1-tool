@@ -6,7 +6,7 @@
 extern int write_flag;
 
 binary_function_cb executeCommand;
-binary_function_cb protocolWrite;
+write_function_cb protocolWrite;
 
 uint8_t protocolBuff[1030];
 uint16_t protocolBuffIdx;
@@ -64,7 +64,7 @@ void binary_protocol_send(uint8_t* buff, size_t len)
 	protocolWrite(protocolBuffOut, protocolLenOut);
 }
 
-bool binary_protocol_parse(uint8_t* buff, size_t len)
+bool binary_protocol_parse(uint8_t* buff, size_t len, char* argv[])
 {
 	size_t k;
 	uint8_t cmd;
@@ -112,7 +112,7 @@ bool binary_protocol_parse(uint8_t* buff, size_t len)
 					break;
 				}
 				res = true; //full correct frame received
-				executeCommand(protocolBuff, protocolBuffIdx - 2);
+				executeCommand(protocolBuff, protocolBuffIdx - 2, argv);
 			}
 			break;
 		}
@@ -122,7 +122,7 @@ bool binary_protocol_parse(uint8_t* buff, size_t len)
 	return res;
 }
 
-void binary_protocol_init(binary_function_cb executeCommand_cb, binary_function_cb uartWrite_cb)
+void binary_protocol_init(binary_function_cb executeCommand_cb, write_function_cb uartWrite_cb)
 {
 	executeCommand = executeCommand_cb;
 	protocolWrite = uartWrite_cb;
