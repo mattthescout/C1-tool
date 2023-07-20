@@ -5,7 +5,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/c1-tool",
-            "args": ["/dev/ttyUSB0", "ic", "2"],
+            "args": ["/dev/ttyUSB0", "ic", "1"],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
