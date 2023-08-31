@@ -1041,7 +1041,7 @@ void mifare_icode_commands_execute(uint8_t* buff, size_t len, char* argv[])
             own_printf("==> Write block: ");
             binary_protocol_send(cmd, msg_len);
             // memcpy(bitmap_copy + (i * part_msg_length), ndef_msg, part_msg_length);
-            for (uint32_t i = 0; i < 10000000; i++)
+            for (uint32_t i = 0; i < 10; i++)
             {
                 i++;
             }
@@ -1103,14 +1103,14 @@ void mifare_icode_commands_execute(uint8_t* buff, size_t len, char* argv[])
                 cmd[3] = blk_cnt;
 
                 // memcpy(bitmap_copy + (i * part_msg_length), ndef_msg, part_msg_length);
-                for (uint32_t i = 0; i < 50000000; i++)
+                for (uint32_t i = 0; i < 10; i++)
                 {
                     i++;
                 }
                 own_printf("==> Write block: ");
                 binary_protocol_send(cmd, msg_len);
 
-                for (uint32_t i = 0; i < 400000000; i++)
+                for (uint32_t i = 0; i < 10; i++)
                 {
                     i++;
                 }
@@ -1161,14 +1161,14 @@ void mifare_icode_commands_execute(uint8_t* buff, size_t len, char* argv[])
                 cmd[3] = blk_cnt;
 
                 // memcpy(bitmap_copy + (i * part_msg_length), ndef_msg, part_msg_length);
-                for (uint32_t i = 0; i < 40000000; i++)
+                for (uint32_t i = 0; i < 10; i++)
                 {
                     i++;
                 }
                 binary_protocol_send(cmd, msg_len);
                 own_printf("==> Write block: ");
 
-                for (uint32_t i = 0; i < 5000000; i++)
+                for (uint32_t i = 0; i < 10; i++)
                 {
                     i++;
                 }
